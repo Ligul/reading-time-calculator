@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Reading Time Calculator</title>
+        <link
+            href="https://bootswatch.com/5/lux/bootstrap.min.css"
+            rel="stylesheet"
+        />
+        <link
+            href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+            rel="stylesheet"
+        />
+    </head>
+    <body class="bg-light">
+        <div class="container py-4">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <h1>Reading Time Calculator</h1>
+                <a href="/services-hub" class="btn btn-dark">
+                    Other Services
+                </a>
+            </div>
+            <p class="text-muted mb-4">
+                Calculate how long it will take to read your text based on
+                different reading speeds
+            </p>
+
+            <div class="row align-items-center mb-4">
+                <div class="col-md-6">
+                    <div class="input-group">
+                        <select id="languageSelect" class="form-select">
+                            <option value="en">English</option>
+                            <option value="zh">Chinese</option>
+                            <option value="es">Spanish</option>
+                            <option value="hi">Hindi</option>
+                            <option value="ar">Arabic</option>
+                            <option value="ru">Russian</option>
+                            <option value="ja">Japanese</option>
+                            <option value="ko">Korean</option>
+                            <option value="other">Other</option>
+                        </select>
+                        <button
+                            id="autoDetectBtn"
+                            class="btn btn-outline-secondary"
+                            type="button"
+                        >
+                            <i class="fas fa-magic"></i> Auto
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mb-4">
+                <textarea
+                    id="textInput"
+                    class="form-control"
+                    rows="6"
+                    placeholder="Paste your text here..."
+                    style="box-sizing: border-box"
+                ></textarea>
+            </div>
+
+            <div class="row g-4 mb-4">
+                <div class="col-md-4">
+                    <div class="card">
+                        <div class="card-body">
+                            <h5 class="card-title">Dynamic Speed</h5>
+                            <div class="input-group">
+                                <input
+                                    type="number"
+                                    id="fastSpeed"
+                                    class="form-control"
+                                    min="1"
+                                />
+                                <span class="input-group-text">words/min</span>
+                                <button
+                                    class="btn btn-outline-secondary reset-btn"
+                                    type="button"
+                                    disabled
+                                >
+                                    <i class="fas fa-undo"></i>
+                                </button>
+                            </div>
+                            <div class="mt-3" id="fastResult"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card">
+                        <div class="card-body">
+                            <h5 class="card-title">Normal Speed</h5>
+                            <div class="input-group">
+                                <input
+                                    type="number"
+                                    id="normalSpeed"
+                                    class="form-control"
+                                    min="1"
+                                />
+                                <span class="input-group-text">words/min</span>
+                                <button
+                                    class="btn btn-outline-secondary reset-btn"
+                                    type="button"
+                                    disabled
+                                >
+                                    <i class="fas fa-undo"></i>
+                                </button>
+                            </div>
+                            <div class="mt-3" id="normalResult"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card">
+                        <div class="card-body">
+                            <h5 class="card-title">Comfortable Speed</h5>
+                            <div class="input-group">
+                                <input
+                                    type="number"
+                                    id="slowSpeed"
+                                    class="form-control"
+                                    min="1"
+                                />
+                                <span class="input-group-text">words/min</span>
+                                <button
+                                    class="btn btn-outline-secondary reset-btn"
+                                    type="button"
+                                    disabled
+                                >
+                                    <i class="fas fa-undo"></i>
+                                </button>
+                            </div>
+                            <div class="mt-3" id="slowResult"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <script>
+            const defaultSpeeds = {
+                en: { fast: 300, normal: 180, slow: 150 },
+                zh: { fast: 260, normal: 160, slow: 120 },
+                es: { fast: 280, normal: 180, slow: 150 },
+                hi: { fast: 250, normal: 160, slow: 130 },
+                ar: { fast: 270, normal: 170, slow: 140 },
+                ru: { fast: 280, normal: 180, slow: 150 },
+                ja: { fast: 260, normal: 160, slow: 120 },
+                ko: { fast: 260, normal: 160, slow: 120 },
+                other: { fast: 280, normal: 180, slow: 150 },
+            };
+
+            // Language detection patterns
+            const languagePatterns = {
+                ru: /[а-яА-Я]/,
+                ar: /[\u0600-\u06FF]/,
+                zh: /[\u4E00-\u9FFF]/,
+                ja: /[\u3040-\u309F\u30A0-\u30FF]/,
+                ko: /[\uAC00-\uD7AF]/,
+                hi: /[\u0900-\u097F]/,
+            };
+
+            let currentSpeeds = {
+                fast: defaultSpeeds.en.fast,
+                normal: defaultSpeeds.en.normal,
+                slow: defaultSpeeds.en.slow,
+            };
+
+            function formatTime(seconds) {
+                if (seconds < 60) return `${seconds}s (${seconds}s)`;
+
+                const h = Math.floor(seconds / 3600);
+                const m = Math.floor((seconds % 3600) / 60);
+                const s = seconds % 60;
+
+                let result = "";
+                if (h > 0) result += `${h}h `;
+                if (m > 0) result += `${m}m `;
+                if (s > 0) result += `${s}s`;
+
+                return `${result.trim()} (${seconds}s)`;
+            }
+
+            function detectLanguage(text) {
+                if (!text) return "en";
+
+                for (const [lang, pattern] of Object.entries(
+                    languagePatterns
+                )) {
+                    if (pattern.test(text)) return lang;
+                }
+
+                return "en";
+            }
+
+            function calculateReadingTime() {
+                const text = document.getElementById("textInput").value;
+                const wordCount = text
+                    .trim()
+                    .split(/\s+/)
+                    .filter((word) => word.length > 0).length;
+
+                ["fast", "normal", "slow"].forEach((speed) => {
+                    const timeInSeconds = Math.ceil(
+                        (wordCount / currentSpeeds[speed]) * 60
+                    );
+                    document.getElementById(
+                        `${speed}Result`
+                    ).textContent = `Reading time: ${formatTime(
+                        timeInSeconds
+                    )}`;
+                });
+            }
+
+            function updateSpeedInputs() {
+                const lang = document.getElementById("languageSelect").value;
+                ["fast", "normal", "slow"].forEach((speed) => {
+                    const input = document.getElementById(`${speed}Speed`);
+                    const resetBtn =
+                        input.nextElementSibling.nextElementSibling;
+                    const storedValue = localStorage.getItem(
+                        `readingtime_${lang}_${speed}`
+                    );
+
+                    if (storedValue) {
+                        input.value = storedValue;
+                        currentSpeeds[speed] = parseInt(storedValue);
+                    } else {
+                        input.value = defaultSpeeds[lang][speed];
+                        currentSpeeds[speed] = defaultSpeeds[lang][speed];
+                    }
+
+                    resetBtn.disabled = !storedValue;
+                });
+
+                calculateReadingTime();
+            }
+
+            // Event Listeners
+            document
+                .getElementById("textInput")
+                .addEventListener("input", calculateReadingTime);
+
+            document
+                .getElementById("languageSelect")
+                .addEventListener("change", function (e) {
+                    localStorage.setItem("readingtime_lang", e.target.value);
+                    updateSpeedInputs();
+                });
+
+            document
+                .getElementById("autoDetectBtn")
+                .addEventListener("click", function () {
+                    const text = document.getElementById("textInput").value;
+                    const detectedLang = detectLanguage(text);
+                    document.getElementById("languageSelect").value =
+                        detectedLang;
+                    localStorage.setItem("readingtime_lang", detectedLang);
+                    updateSpeedInputs();
+                });
+
+            // Speed input event listeners
+            ["fast", "normal", "slow"].forEach((speed) => {
+                const input = document.getElementById(`${speed}Speed`);
+                const resetBtn = input.nextElementSibling.nextElementSibling;
+
+                input.addEventListener("change", function () {
+                    const lang =
+                        document.getElementById("languageSelect").value;
+                    const value = parseInt(this.value);
+
+                    if (value !== defaultSpeeds[lang][speed]) {
+                        localStorage.setItem(
+                            `readingtime_${lang}_${speed}`,
+                            value
+                        );
+                        resetBtn.disabled = false;
+                    } else {
+                        localStorage.removeItem(`readingtime_${lang}_${speed}`);
+                        resetBtn.disabled = true;
+                    }
+
+                    currentSpeeds[speed] = value;
+                    calculateReadingTime();
+                });
+
+                resetBtn.addEventListener("click", function () {
+                    const lang =
+                        document.getElementById("languageSelect").value;
+                    input.value = defaultSpeeds[lang][speed];
+                    localStorage.removeItem(`readingtime_${lang}_${speed}`);
+                    this.disabled = true;
+                    currentSpeeds[speed] = defaultSpeeds[lang][speed];
+                    calculateReadingTime();
+                });
+            });
+
+            // Initialize
+            const savedLang = localStorage.getItem("readingtime_lang") || "en";
+            document.getElementById("languageSelect").value = savedLang;
+            updateSpeedInputs();
+        </script>
+        <script>
+            const textInput = document.getElementById("textInput");
+
+            textInput.addEventListener("input", () => {
+                textInput.style.height = "auto"; // Сбрасываем высоту, чтобы правильно измерить
+                textInput.style.height = `${textInput.scrollHeight}px`; // Устанавливаем высоту по содержимому
+            });
+        </script>
+    </body>
+</html>
