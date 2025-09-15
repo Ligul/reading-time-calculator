@@ -135,6 +135,14 @@
                     </div>
                 </div>
             </div>
+            
+            <div class="mt-4 p-3 bg-white border">
+                <div class="d-flex align-items-center">
+                    <!-- idk if i like this icon or not -->
+                    <!-- <i class="fas fa-file-word text-primary me-2"></i> -->
+                    <h5 class="card-title mb-0" id="wordCount">Words: 0</h5>
+                </div>
+            </div>
         </div>
 
         <script>
@@ -199,6 +207,9 @@
                     .trim()
                     .split(/\s+/)
                     .filter((word) => word.length > 0).length;
+
+                // Update word count display
+                document.getElementById("wordCount").textContent = `Words: ${wordCount}`;
 
                 ["fast", "normal", "slow"].forEach((speed) => {
                     const timeInSeconds = Math.ceil(
